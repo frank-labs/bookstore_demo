@@ -10,6 +10,8 @@ import ca.uwo.bookstore.repository.RoleRepository;
 import ca.uwo.bookstore.repository.UserRepository;
 import ca.uwo.bookstore.security.jwt.JwtUtils;
 import ca.uwo.bookstore.security.services.UserDetailsImpl;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -45,25 +47,40 @@ public class AuthController {
   JwtUtils jwtUtils;
 
   @PostMapping("/signin")
-  public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
+  public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest, HttpServletResponse response) {
 
+    // Authenticate the user
     Authentication authentication = authenticationManager.authenticate(
-        new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
+            new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword())
+    );
 
     SecurityContextHolder.getContext().setAuthentication(authentication);
     String jwt = jwtUtils.generateJwtToken(authentication);
-    
+
     UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
     List<String> roles = userDetails.getAuthorities().stream()
-        .map(item -> item.getAuthority())
-        .collect(Collectors.toList());
+            .map(item -> item.getAuthority())
+            .collect(Collectors.toList());
 
-    return ResponseEntity.ok(new JwtResponse(jwt,
-                         userDetails.getId(), 
-                         userDetails.getUsername(), 
-                         userDetails.getEmail(), 
-                         roles));
+    // Set the JWT as a HttpOnly cookie
+    Cookie jwtCookie = new Cookie("jwt", jwt);
+    jwtCookie.setHttpOnly(true);
+    jwtCookie.setSecure(true); // Use true in production to enforce HTTPS
+    jwtCookie.setPath("/"); // Cookie will be accessible across your application
+    jwtCookie.setMaxAge(24 * 60 * 60); // Cookie will expire in 1 day
+
+    response.addCookie(jwtCookie);
+
+    // Return the rest of the user info (without the token)
+   return ResponseEntity.ok(new JwtResponse(
+            null, // No need to send the token in the body anymore
+            userDetails.getId(),
+            userDetails.getUsername(),
+            userDetails.getEmail(),
+            roles
+    ));
   }
+
 
   @PostMapping("/signup")
   public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) {

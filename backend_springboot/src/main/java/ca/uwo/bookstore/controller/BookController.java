@@ -8,6 +8,7 @@ import ca.uwo.bookstore.models.Book;
 import ca.uwo.bookstore.repository.BookMapper;
 import ca.uwo.bookstore.repository.BookRepository;
 import ca.uwo.bookstore.repository.UserRepository;
+import ca.uwo.bookstore.security.jwt.JwtUtils;
 import ca.uwo.bookstore.security.services.UserDetailsImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +41,9 @@ public class BookController {
     @Autowired
     BookMapper bookMapper;
 
+    @Autowired
+    JwtUtils jwtUtils;
+
     private Sort.Direction getSortDirection(String direction) {
         if (direction.equals("asc")) {
             return Sort.Direction.ASC;
@@ -54,7 +58,7 @@ public class BookController {
     public ResponseEntity<Map<String, Object>> getAllBooksPage(
             @RequestParam(required = false) String title,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "36") int size,
             @RequestParam(defaultValue = "id,asc") String[] sort) {
 
         try {
@@ -97,7 +101,7 @@ public class BookController {
 
     @GetMapping("/mybook")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
-    public ResponseEntity<Map<String, Object>> getUserBooksPage(
+    public ResponseEntity<Map<String, Object>> getUserBooksPage(@CookieValue("jwt") String jwt,
             @RequestParam(required = false) String title,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int size,
@@ -115,6 +119,13 @@ public class BookController {
                 // sort=[field, direction]
                 orders.add(new Sort.Order(getSortDirection(sort[1]), sort[0]));
             }
+            if (jwt == null || !jwtUtils.validateJwtToken(jwt)) {
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("error", "Invalid or missing token");
+                errorResponse.put("status", HttpStatus.UNAUTHORIZED.value());
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+            }
+
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
             // Extract user details from the Authentication object
