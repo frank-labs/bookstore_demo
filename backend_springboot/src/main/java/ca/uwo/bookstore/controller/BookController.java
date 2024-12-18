@@ -175,7 +175,13 @@ public class BookController {
 
     @PostMapping("/buybook")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
-    public ResponseEntity<Map<String, Object>> buyBook(@RequestBody UserBookPair userBookPair) {
+    public ResponseEntity<Map<String, Object>> buyBook(@CookieValue("jwt") String jwt,@RequestBody UserBookPair userBookPair) {
+        if (jwt == null || !jwtUtils.validateJwtToken(jwt)) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Invalid or missing token");
+            errorResponse.put("status", HttpStatus.UNAUTHORIZED.value());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+        }
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         String username = userDetails.getUsername();
@@ -195,12 +201,17 @@ public class BookController {
 
     @GetMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Map<String, Object>> getAllBooksPagebyAdmin(
+    public ResponseEntity<Map<String, Object>> getAllBooksPagebyAdmin(@CookieValue("jwt") String jwt,
             @RequestParam(required = false) String title,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "3") int size,
             @RequestParam(defaultValue = "id,desc") String[] sort) {
-
+        if (jwt == null || !jwtUtils.validateJwtToken(jwt)) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Invalid or missing token");
+            errorResponse.put("status", HttpStatus.UNAUTHORIZED.value());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+        }
         try {
             List<Sort.Order> orders = new ArrayList<Sort.Order>();
 

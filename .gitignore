@@ -1,3 +1,4 @@
 .idea
 backend_springboot/target
 backend_springboot/.idea
+backend_springboot/src/main/resources
