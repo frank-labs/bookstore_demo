@@ -38,7 +38,7 @@ jobs:
           sudo apt-get install -y sshpass
           
           # SCP the JAR file directly to your VPS (no need for artifacts)
-          sshpass -p "$VPS_PASSWORD" scp -o StrictHostKeyChecking=no target/*.jar $VPS_USER@$VPS_HOST:/root/bookstore.jar
+          sshpass -p "$VPS_PASSWORD" scp -o StrictHostKeyChecking=no backend_springboot/target/*.jar $VPS_USER@$VPS_HOST:/root/bookstore.jar
           
           # SSH into the VPS and restart the Spring Boot application using systemd
           sshpass -p "$VPS_PASSWORD" ssh -o StrictHostKeyChecking=no $VPS_USER@$VPS_HOST << 'EOF'
