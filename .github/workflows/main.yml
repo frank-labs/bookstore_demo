@@ -10,32 +10,36 @@ jobs:
     runs-on: ubuntu-latest  # This job will perform both build and deploy steps
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v2
-      with:
-        java-version: '17'  # Set Java version as needed
+      - name: Set up JDK 17
+        uses: actions/setup-java@v2
+        with:
+          java-version: '17'  # Set Java version as needed
+          distribution: 'temurin'  # Specify the distribution (Temurin is the official OpenJDK distribution)
+          java-package: jdk
+          architecture: x64
+          check-latest: false
 
-    - name: Build JAR file with Maven
-      run: mvn clean package -DskipTests  # Build the JAR file
+      - name: Build JAR file with Maven
+        run: mvn clean package -DskipTests  # Build the JAR file
 
-    - name: Install sshpass and deploy to VPS
-      env:
-        VPS_USER: ${{ secrets.VPS_USER }}  # Use secrets for security
-        VPS_HOST: ${{ secrets.VPS_HOST }}
-        VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
-      run: |
-        # Install sshpass, a utility to pass the password to ssh/scp commands
-        sudo apt-get update
-        sudo apt-get install -y sshpass
-
-        # SCP the JAR file directly to your VPS (no need for artifacts)
-        sshpass -p "$VPS_PASSWORD" scp -o StrictHostKeyChecking=no target/*.jar $VPS_USER@$VPS_HOST:/root/bookstore.jar
-
-        # SSH into the VPS and restart the Spring Boot application using systemd
-        sshpass -p "$VPS_PASSWORD" ssh -o StrictHostKeyChecking=no $VPS_USER@$VPS_HOST << 'EOF'
-          # Restart the bookstore service using systemd
-          sudo systemctl restart bookstore
-        EOF
+      - name: Install sshpass and deploy to VPS
+        env:
+          VPS_USER: ${{ secrets.VPS_USER }}  # Use secrets for security
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+        run: |
+          # Install sshpass, a utility to pass the password to ssh/scp commands
+          sudo apt-get update
+          sudo apt-get install -y sshpass
+          
+          # SCP the JAR file directly to your VPS (no need for artifacts)
+          sshpass -p "$VPS_PASSWORD" scp -o StrictHostKeyChecking=no target/*.jar $VPS_USER@$VPS_HOST:/root/bookstore.jar
+          
+          # SSH into the VPS and restart the Spring Boot application using systemd
+          sshpass -p "$VPS_PASSWORD" ssh -o StrictHostKeyChecking=no $VPS_USER@$VPS_HOST << 'EOF'
+            # Restart the bookstore service using systemd
+            sudo systemctl restart bookstore
+          EOF
