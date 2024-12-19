@@ -3,11 +3,11 @@ name: Deploy Spring Boot to VPS
 on:
   push:
     branches:
-      - main  # Trigger the action when changes are pushed to the main branch (adjust if necessary)
+      - main
 
 jobs:
   build_and_deploy:
-    runs-on: ubuntu-latest  # This job will perform both build and deploy steps
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
@@ -16,18 +16,20 @@ jobs:
       - name: Set up JDK 17
         uses: actions/setup-java@v2
         with:
-          java-version: '17'  # Set Java version as needed
+          java-version: '17'
           distribution: 'temurin'  # Specify the distribution (Temurin is the official OpenJDK distribution)
           java-package: jdk
           architecture: x64
           check-latest: false
 
       - name: Build JAR file with Maven
-        run: mvn clean package -DskipTests  # Build the JAR file
+        run: |
+          cd backend_springboot
+          mvn clean package -DskipTests 
 
       - name: Install sshpass and deploy to VPS
         env:
-          VPS_USER: ${{ secrets.VPS_USER }}  # Use secrets for security
+          VPS_USER: ${{ secrets.VPS_USER }}
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
         run: |
